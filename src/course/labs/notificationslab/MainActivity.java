@@ -17,6 +17,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -49,7 +50,7 @@ public class MainActivity extends Activity implements SelectionListener {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
+		//System.out.println("onCreate");
 		mFragmentManager = getFragmentManager();
 		addFriendsFragment();
 
@@ -63,7 +64,7 @@ public class MainActivity extends Activity implements SelectionListener {
 
 	// Add Friends Fragment to Activity
 	private void addFriendsFragment() {
-
+		//System.out.println("addFriendsFragment");
 		mFriendsFragment = new FriendsFragment();
 		mFriendsFragment.setArguments(getIntent().getExtras());
 
@@ -76,7 +77,7 @@ public class MainActivity extends Activity implements SelectionListener {
 	// If stored Tweets are not fresh, reload them from network
 	// Otherwise, load them from file
 	private void ensureData() {
-
+		//System.out.println("ensureData");
 		log("In ensureData(), mIsFresh:" + mIsFresh);
 
 		if (!mIsFresh) {
@@ -90,7 +91,7 @@ public class MainActivity extends Activity implements SelectionListener {
 			
 			// TODO:
 			// Start new AsyncTask to download Tweets from network
-
+			new DownloaderTask(this).execute(new String[] {URL_TSWIFT, URL_RBLACK, URL_LGAGA});
 
 
 			
@@ -101,28 +102,34 @@ public class MainActivity extends Activity implements SelectionListener {
 				public void onReceive(Context context, Intent intent) {
 
 					log("BroadcastIntent received in MainActivity");
-
+					//System.out.println("mRefreshReceiver onReceive");
 					// TODO:				
 					// Check to make sure this is an ordered broadcast
 					// Let sender know that the Intent was received
 					// by setting result code to RESULT_OK
-
+					if(isOrderedBroadcast() == true){
+						//System.out.println("orderedBroadcastReceiver == true");
+						setResultCode(RESULT_OK);
+					}
+					else{
+						//System.out.println("not an orderedBroadcastReceiver");
+					}
 
 				}
 			};
 
 		} else {
-
+			//System.out.println("else mIsFresh ");
 			loadTweetsFromFile();
 			parseJSON();
 			updateFeed();
 
 		}
 	}
-
+	
 	// Called when new Tweets have been downloaded 
 	public void setRefreshed(String[] feeds) {
-
+		//System.out.println("setRefreshed");
 		mRawFeeds[0] = feeds[0];
 		mRawFeeds[1] = feeds[1];
 		mRawFeeds[2] = feeds[2];
@@ -136,7 +143,7 @@ public class MainActivity extends Activity implements SelectionListener {
 	// Called when a Friend is clicked on
 	@Override
 	public void onItemSelected(int position) {
-
+		//System.out.println("onItemSelected");
 		mFeedSelected = position;
 		mFeedFragment = addFeedFragment();
 
@@ -149,15 +156,16 @@ public class MainActivity extends Activity implements SelectionListener {
 	// the tweets for the currently selected friend
  
 	void updateFeed() {
-
+		//System.out.println("updateFeed");
 		if (null != mFeedFragment)
-
+			//System.out.println("null != mFeedFragment");
 			mFeedFragment.update(mProcessedFeeds[mFeedSelected]);
 
 	}
 
 	// Add FeedFragment to Activity
 	private FeedFragment addFeedFragment() {
+		//System.out.println("addFeedFragment");
 		FeedFragment feedFragment;
 		feedFragment = new FeedFragment();
 
@@ -176,32 +184,44 @@ public class MainActivity extends Activity implements SelectionListener {
 	@Override
 	protected void onResume() {
 		super.onResume();
-
+		//System.out.println("onResume");
 		// TODO:
 		// Register the BroadcastReceiver to receive a 
 		// DATA_REFRESHED_ACTION broadcast
-
-
+		
+		//need to create an intent filter to register broadcastReceiver
+		IntentFilter intentFilter = new IntentFilter(DATA_REFRESHED_ACTION);
+		
+		//if our receiver is null then 
+		if(mRefreshReceiver != null){
+			//System.out.println("registering the receiver");
+			this.registerReceiver(mRefreshReceiver, intentFilter);
+		}
 		
 	}
 
 	@Override
 	protected void onPause() {
-
+		super.onPause();
+		//System.out.println("onPause");
 		// TODO:
 		// Unregister the BroadcastReceiver
-
+		
+		if(mRefreshReceiver != null){
+			//System.out.println("unregistering the receiver");
+			this.unregisterReceiver(mRefreshReceiver);
+		}
 
 		
 		
-		super.onPause();
+		
 
 	}
 
 	// Convert raw Tweet data (in JSON format) into text for display
 
 	public void parseJSON() {
-
+		//System.out.println("parseJSON");
 		JSONArray[] JSONFeeds = new JSONArray[NUM_FRIENDS];
 
 		for (int i = 0; i < NUM_FRIENDS; i++) {
@@ -243,7 +263,7 @@ public class MainActivity extends Activity implements SelectionListener {
 
 	private void loadTweetsFromFile() {
 		BufferedReader reader = null;
-
+		//System.out.println("loadTweetsFromFile");
 		try {
 			FileInputStream fis = openFileInput(TWEET_FILENAME);
 			reader = new BufferedReader(new InputStreamReader(fis));

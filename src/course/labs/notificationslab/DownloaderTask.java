@@ -41,7 +41,7 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 	// Constructor
 	public DownloaderTask(MainActivity parentActivity) {
 		super();
-
+		System.out.println("DownloaderTask()");
 		mParentActivity = parentActivity;
 		mApplicationContext = parentActivity.getApplicationContext();
 
@@ -49,6 +49,7 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 
 	@Override
 	protected String[] doInBackground(String... urlParameters) {
+		System.out.println("doInBackground()");
 		log("Entered doInBackground()");
 
 		return download(urlParameters);
@@ -56,11 +57,11 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 	}
 
 	private String[] download(String urlParameters[]) {
-
+		System.out.println("download()");
 		boolean downloadCompleted = false;
 
 		try {
-
+			System.out.println("trying to download");
 			for (int idx = 0; idx < urlParameters.length; idx++) {
 
 				URL url = new URL(urlParameters[idx]);
@@ -117,7 +118,7 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 	@Override
 	protected void onPostExecute(String[] result) {
 		super.onPostExecute(result);
-
+		System.out.println("onPostExecute()");
 		if (mParentActivity != null) {
 			mParentActivity.setRefreshed(result);
 		}
@@ -130,13 +131,13 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 
 	private void notify(final boolean success) {
 		log("Entered notify()");
-
-		final Intent restartMainActivtyIntent = new Intent(mApplicationContext,
+		System.out.println("notify()");
+		final Intent restartMainActivityIntent = new Intent(mApplicationContext,
 				MainActivity.class);
-		restartMainActivtyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		restartMainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
 		if (success) {
-
+			System.out.println("success so save tweets to file");
 			// Save tweets to a file
 			saveTweetsToFile();
 
@@ -160,18 +161,20 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 
 					@Override
 					public void onReceive(Context context, Intent intent) {
-
+						System.out.println("onReceive()");
 						log("Entered result receiver's onReceive() method");
 
-						// TODO: Check whether the result code is RESULT_OK
+						// TODO: Check whether the result code is not RESULT_OK
+						//	if the result isnt ok then we want to execute the code
 
-						if (/*change this*/ true) {
-
+						if (getResultCode() != Activity.RESULT_OK/*change this*/ /*true*/) {
+							System.out.println("getResultCode != RESULT_OK");
 							// TODO:  If so, create a PendingIntent using the
 							// restartMainActivityIntent and set its flags
 							// to FLAG_UPDATE_CURRENT
 							
-							final PendingIntent pendingIntent = null;
+							final PendingIntent pendingIntent = PendingIntent.getActivity(mApplicationContext, 0,
+									restartMainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 							
 
 
@@ -186,7 +189,16 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 							// TODO: Set the notification View's text to
 							// reflect whether or the download completed
 							// successfully
-
+							if(success == true){
+								System.out.println("success");
+								mContentView.setTextViewText(R.id.text, successMsg);
+								//setText(successMsg);
+							}
+							else{
+								System.out.println("not successful");
+								mContentView.setTextViewText(R.id.text, failMsg);
+								//setText(failMsg);
+							}
 
 							
 							// TODO: Use the Notification.Builder class to
@@ -195,12 +207,19 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 							// android.R.drawable.stat_sys_warning
 							// for the small icon. You should also setAutoCancel(true). 
 
-							Notification.Builder notificationBuilder = null;
+							Notification.Builder notificationBuilder = new Notification.Builder(mApplicationContext)
+							.setContent(mContentView)
+							.setAutoCancel(true)
+							.setSmallIcon(android.R.drawable.alert_dark_frame)
+							.setContentIntent(pendingIntent)
+							.setVibrate(new long[]{1000});
 
 							// TODO: Send the notification
-
+							 NotificationManager mNotificationManager = (NotificationManager)
+						                mApplicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+							 mNotificationManager.notify(MY_NOTIFICATION_ID, notificationBuilder.build());
 							
-							
+							 System.out.println("using notification manager to send notification");
 							log("Notification Area Notification sent");
 						}
 					}
@@ -213,6 +232,7 @@ public class DownloaderTask extends AsyncTask<String, Void, String[]> {
 
 	// Saves the tweets to a file
 	private void saveTweetsToFile() {
+		System.out.println("saveTweetsToFile()");
 		PrintWriter writer = null;
 		try {
 			FileOutputStream fos = mApplicationContext.openFileOutput(
